@@ -157,7 +157,16 @@ async def on_member_remove(member):
 @client.event
 async def on_guild_join(guild):
     dbh.new_event(DatabaseEventType.guild_joined, guild.id, "", False, False, datetime.now())
-    dbh.add_server(guild.id, guild.owner_id, guild.splash_url, guild.banner_url, guild.icon_url)
+    splash = ""
+    if hasattr(guild, "splash_url"):
+        splash = guild.splash_url
+    banner = ""
+    if hasattr(guild, "banner_url"):
+        banner = guild.banner_url
+    icon = ""
+    if hasattr(guild, "icon_url"):
+        icon = guild.icon_url
+    dbh.add_server(guild.id, guild.owner_id, splash, banner, icon)
 
 @client.event
 async def on_guild_remove(guild):
