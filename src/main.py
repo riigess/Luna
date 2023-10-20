@@ -357,6 +357,6 @@ async def github(interaction:discord.Interaction):
 #     client.run(dbh.get_token('discord-beta'))
 # else:
 #     client.run(dbh.get_token("discord"))
-service_name = "Discord"
+service_name = "discord"
 token = dbh.get_token(service_name)
-client.run(dbh.get_token(service_name))
+client.run(token)
