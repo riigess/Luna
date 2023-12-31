@@ -10,4 +10,12 @@ A Discord bot designed to help grow communities.
 ## Goals
 [X] Interact with Riot Games's API
 
-[ ] Develop community moderation tools
+<details>
+    <summary>[ ] Develop community moderation tools</summary>
+
+    ### Community Tools
+    [ ] Add Punishment System
+    [ ] Message Spam Filtering
+    [ ] Safety-promoting features (Remove embeds and re-link to article using the check_url() function)
+</details>
+

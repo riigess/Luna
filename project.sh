@@ -52,7 +52,7 @@ if [ "$database_test" = true ]; then
 fi
 
 if [ "$start" = true ]; then
-    output="$(ps -aux | grep python3 | grep -v grep)"
+    output="$(ps -aux | grep python3 | grep "Mona/main.py" | grep -v grep)"
 
     if [[ -n $output ]]; then
         echo "Already running process.."
@@ -60,6 +60,6 @@ if [ "$start" = true ]; then
         cd $HOME/Mona
         git pull
         cd src
-        python3 main.py
+        python3 ~/Mona/src/main.py
     fi
 fi
