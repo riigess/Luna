@@ -4,6 +4,8 @@ from enumerators.PlatformEndpoints import PlatformEndpoints
 from enumerators.RegionalEndpoints import RegionalEndpoints
 from resources.DatabaseHandler import DatabaseHandler
 
+import json
+
 class RiotAPI:
     def __init__(self, dbh:DatabaseHandler=None):
         self.dbh = dbh
@@ -109,7 +111,7 @@ class RiotAPI:
         return self.fetch(platform=None, region=region, endpoint=f"/lol/match/v5/matches/by-puuid/{puuid}/ids")
 
     def get_league_match_timeline_by_id(self, platform:PlatformEndpoints=None, region:RegionalEndpoints=None, match_id:str="") -> dict:
-        return self.fetch(platform=platform, region=region, endpoint="/lol/match/v4/timelines/by-match/" + match_id)
+        return self.fetch(platform=platform, region=region, endpoint=f"/lol/match/v5/matches/{match_id}/timeline")
 
     def get_league_matches_by_tournament_code(self, platform:PlatformEndpoints=None, region:RegionalEndpoints=None, tournament_code:str="") -> dict:
         return self.fetch(platform=platform, region=region, endpoint="/lol/match/v4/matches/by-tournament-code/%s/ids" % tournament_code)
@@ -233,4 +235,6 @@ class RiotAPI:
 
     ### DDragon for League of Legends
     def get_ddragon_champion_json(self):
-        return self.dbh.check_for_cache('http://ddragon.leagueoflegends.com/cdn/12.6.1/data/en_US/champion.json')['response']
+        resp = self.dbh.check_for_cache('http://ddragon.leagueoflegends.com/cdn/14.3.1/data/en_US/champion.json')
+        print("expiry:", resp['expiry'])
+        return json.loads(resp['response'])
