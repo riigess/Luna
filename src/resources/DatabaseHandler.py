@@ -13,6 +13,7 @@ import requests
 class DatabaseHandler:
     def __init__(self, file:str="database.sqlite"):
         self.file = file
+        self.data = {}
         if '.json' in self.file:
             f = open(file, 'r')
             self.data = json.loads(f.read())
@@ -157,7 +158,7 @@ class DatabaseHandler:
         self.refresh_sql_cnx()
         self.cur.execute(f"SELECT * FROM urlRequests WHERE url=\"{url}\" ORDER BY datetime DESC LIMIT 1")
         header = [i[0] for i in self.cur.description]
-        resp = self.cur.fetchall()[0]
+        resp = self.cur.fetchall()
         now = datetime.now()
         if len(resp) > 0:
             resp = resp[0]
@@ -171,7 +172,8 @@ class DatabaseHandler:
         expiry_str = datetime(now.year, now.month, now.day + 7, 0, 0, 0).strftime("%Y-%m-%d %H:%M:%S")
         sanitized_req = json.dumps(req_j).replace("'", "&amp;").replace('"', "'")
         self.cur.execute(f"INSERT INTO urlRequests(url, response, datetime, expiry) VALUES (\"{url}\", \"{sanitized_req}\", \"{now_str}\", \"{expiry_str}\")")
-        self.sql.commit()
-        self.sql = sqlite.connect(user=self.data['user'], password=self.data['password'], host=self.data['host'], database=self.data['database'])
+        if '.json' in self.file:
+            self.sql.commit()
+            self.sql = sqlite.connect(user=self.data['user'], password=self.data['password'], host=self.data['host'], database=self.data['database'])
         to_return = {"url":url, "response":json.dumps(req_j), "timestamp":now_str, "expiry":expiry_str}
         return to_return
