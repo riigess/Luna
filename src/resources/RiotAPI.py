@@ -237,4 +237,4 @@ class RiotAPI:
     def get_ddragon_champion_json(self):
         resp = self.dbh.check_for_cache('http://ddragon.leagueoflegends.com/cdn/14.3.1/data/en_US/champion.json')
         print("expiry:", resp['expiry'])
-        return json.loads(resp['response'])
+        return json.loads(resp['response'].replace("'", '"'))

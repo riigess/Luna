@@ -164,12 +164,19 @@ class DatabaseHandler:
             resp = resp[0]
             if datetime.strptime(resp[-1], "%Y-%m-%d %H:%M:%S").timestamp() < now.timestamp():
                 to_return = {}
-                to_return.update({header[i]:resp[i]} for i in range(len(header)))
+                for i in range(len(header)):
+                    print(header[i], resp[i])
+                    to_return.update({header[i]:resp[i]})
+                # to_return.update({header[i]:resp[i]} for i in range(len(header)))
                 return to_return
         req = requests.get(url, headers=self.riot_headers)
         req_j = req.json()
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        expiry_str = datetime(now.year, now.month, now.day + 7, 0, 0, 0).strftime("%Y-%m-%d %H:%M:%S")
+        now_timestamp = datetime.now().timestamp()
+        seven_days = 7 * 24 * 3600 * 1000 #In milliseconds, may also be rewritten as 168 * 3600 * 1000 == 168 * 3600000
+        expiry_stamp = datetime.fromtimestamp(now_timestamp + seven_days)
+        expiry_str = expiry_stamp.strftime("%Y-%m-%d %H:%M:%S")
+        # expiry_str = datetime(now.year, now.month, now.day + 7, 0, 0, 0).strftime("%Y-%m-%d %H:%M:%S")
         sanitized_req = json.dumps(req_j).replace("'", "&amp;").replace('"', "'")
         self.cur.execute(f"INSERT INTO urlRequests(url, response, datetime, expiry) VALUES (\"{url}\", \"{sanitized_req}\", \"{now_str}\", \"{expiry_str}\")")
         if '.json' in self.file:
