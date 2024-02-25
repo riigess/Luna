@@ -288,15 +288,13 @@ async def summonerinfo(interaction:discord.Interaction, summoner_name:str, endpo
 async def champrotations(interaction:discord.Interaction, endpoint:str='NorthAmerica'):
     if endpoint in PlatformEndpoints._member_names_:
         plat = PlatformEndpoints[endpoint]
-        champ_rot = json.loads(rito.get_champion_rotations(platform=plat)['response'])
-        print("champ_rot:", champ_rot)
+        champ_rot = json.loads(rito.get_champion_rotations(platform=plat)['response'].replace("'", '"'))
         ddragon = rito.get_ddragon_champion_json()
         champ_dict = ddragon['data']
         key_champ = {}
         for champion in list(champ_dict):
             key_champ.update({champ_dict[champion]['key']:champion})
         free_rot_champs = [[], []]
-        print("key_champ:", key_champ)
         for i in champ_rot['freeChampionIds']:
             free_rot_champs[0].append(key_champ[str(i)])
         for j in champ_rot['freeChampionIdsForNewPlayers']:

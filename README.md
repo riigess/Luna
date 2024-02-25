@@ -16,6 +16,6 @@ A Discord bot designed to help grow communities.
     ### Community Tools
     [ ] Add Punishment System
     [ ] Message Spam Filtering
-    [ ] Safety-promoting features (Remove embeds and re-link to article using the check_url() function)
+    [ ] Safety-promoting features (Remove embeds and re-link to article utilizing the check_url() function)
 </details>
 
