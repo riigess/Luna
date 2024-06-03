@@ -2,23 +2,27 @@ package com.riigess.mona.network
 
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-class URLRequests {
+class URLRequests(baseURL:String) {
 //    private val baseURL:String = "https://discord.com/api/v10"
 //    private val wssURL:String = "wss://gateway.discord.gg"
-    private val baseURL:String = "http://192.168.15.11:20080"
+    private val baseURL:String
 
     init {
-        println(baseURL)
+        this.baseURL = baseURL
     }
 
-    fun makeGetRequest(endpoint:String): Response {
+    fun makeGetRequest(endpoint:String, headers:Map<String, String> = mapOf()): Response {
         val client = OkHttpClient()
+        val auth:String = if (headers.containsKey("Authorization")) headers.get("Authorization")!! else ""
+        val accept:String = if (headers.containsKey("accept")) headers.get("accept")!! else ""
         val request = Request.Builder()
             .url("$baseURL/$endpoint")
+            .headers(Headers.headersOf("Authorization", auth, "accept", accept))
             .get()
             .build()
         return client.newCall(request).execute()
