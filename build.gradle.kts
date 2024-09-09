@@ -39,6 +39,10 @@ application {
     mainClass = "com.riigess.mona.Runner"
 }
 
+tasks.run {
+    classpath = sourceSets.main.
+}
+
 tasks.test {
     useJUnitPlatform()
 }
