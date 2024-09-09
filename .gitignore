@@ -42,3 +42,4 @@ bin/
 .venv/
 *.pyc
 src/__pycache__/*
+settings.properties
