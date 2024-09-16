@@ -2,8 +2,16 @@
 
 runner() {
     cd /root/mona
+    if [ -f .venv/bin/activate ]; then
+        echo ".venv exists (check passed)"
+    else
+        python3 -m venv .venv
+        pip3 install -r requirements.txt
+    fi
+    echo "Updating directory with git"
     git pull
     cd src
+    echo "Starting bot"
     python3 main.py
     runner
 }
