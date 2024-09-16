@@ -163,3 +163,7 @@ cython_debug/
 database.sqlite
 *.json
 
+# Preventing changes from other branches from appearing
+.gradle/
+.idea/
+settings.properties
