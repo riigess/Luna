@@ -1,7 +1,9 @@
 #!/bin/bash
 
+proj_dir="/home/riigess/Documents/Github"
+
 runner() {
-    cd /home/riigess/Documents/Github/Mona
+    cd $proj_dir/Mona
     if [ -f .venv/bin/activate ]; then
         echo ".venv exists (check passed)"
         source .venv/bin/activate
@@ -20,7 +22,7 @@ runner() {
 }
 
 # If there is nothing running in /root/mona/src
-if [[ -z "$(ps -auxe | grep "python3" | grep "PWD=/home/riigess/Documents/Mona/src" | grep -v grep)" ]]; then
+if [[ -z "$(ps -auxe | grep "python3" | grep "PWD=$proj_dir/Mona/src" | grep -v grep)" ]]; then
     runner
 else
     echo "Already running"
