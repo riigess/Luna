@@ -6,6 +6,7 @@ runner() {
         echo ".venv exists (check passed)"
     else
         python3 -m venv .venv
+        source .venv/bin/activate
         pip3 install -r requirements.txt
     fi
     echo "Updating directory with git"
@@ -17,7 +18,7 @@ runner() {
 }
 
 # If there is nothing running in /root/mona/src
-if [[ -z "$(ps -auxe | grep "python3" | grep "PWD=/root/mona/src" | grep -v grep)" ]]; then
+if [[ -z "$(ps -auxe | grep "python3" | grep "PWD=/home/riigess/Documents/Mona/src" | grep -v grep)" ]]; then
     runner
 else
     echo "Already running"
