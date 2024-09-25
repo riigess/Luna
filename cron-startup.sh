@@ -1,7 +1,7 @@
 #!/bin/bash
 
 runner() {
-    cd /root/mona
+    cd /home/riigess/Documents/Github/Mona
     if [ -f .venv/bin/activate ]; then
         echo ".venv exists (check passed)"
     else
