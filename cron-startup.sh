@@ -4,7 +4,9 @@ runner() {
     cd /home/riigess/Documents/Github/Mona
     if [ -f .venv/bin/activate ]; then
         echo ".venv exists (check passed)"
+        source .venv/bin/activate
     else
+        echo ".venv does not exist (check not passed)"
         python3 -m venv .venv
         source .venv/bin/activate
         pip3 install -r requirements.txt
