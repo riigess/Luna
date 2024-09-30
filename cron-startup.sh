@@ -4,13 +4,13 @@ proj_dir="/home/riigess/Documents/Github"
 
 runner() {
     cd $proj_dir/Mona
-    if [ -f .venv/bin/activate ]; then
-        echo ".venv exists (check passed)"
-        source .venv/bin/activate
+    if [ -f .mona-venv/bin/activate ]; then
+        echo ".mona-venv exists (check passed)"
+        source .mona-venv/bin/activate
     else
-        echo ".venv does not exist (check not passed)"
-        python3 -m venv .venv
-        source .venv/bin/activate
+        echo ".mona-venv does not exist (check not passed)"
+        python3 -m venv .mona-venv
+        source .mona-venv/bin/activate
         pip3 install -r requirements.txt
     fi
     echo "Updating directory with git"
