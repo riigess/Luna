@@ -1,6 +1,6 @@
 #!/bin/bash
 
-proj_dir="/home/riigess/Github"
+proj_dir="/home/austin/code"
 
 runner() {
     cd $proj_dir/Mona
