@@ -23,8 +23,11 @@ intents.members = True
 intents.messages = True
 intents.presences = True
 
+with open('../config.json', 'r') as f:
+    tokens = json.loads(f.read())
+
 string_time = "%d-%m-%Y %H:%M:%S"
-dbh = DatabaseHandler()
+dbh = DatabaseHandler(tokens['Riot Games'])
 rito = RiotAPI(dbh=dbh)
 
 command = {}
@@ -362,12 +365,11 @@ async def invite(interaction:discord.Interaction):
 @client.tree.command()
 async def github(interaction:discord.Interaction):
     """Requests the GitHub link for the project for this discord bot"""
-    embed = discord.Embed(title="Check me out on GitHub!", url="https://github.com/riigess/Mona")
+    embed = discord.Embed(title="Check me out on GitHub!", url="https://github.com/riigess/Luna")
     embed.set_image(url='https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png')
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 service_name = "discord"
-with open('config.json', 'r') as f:
-    token = json.loads(f.read())[service_name]
+token = tokens[service_name]
 client.run(token)

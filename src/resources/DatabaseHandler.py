@@ -10,7 +10,7 @@ from enumerators.PlatformEndpoints import PlatformEndpoints
 import requests
 
 class DatabaseHandler:
-    def __init__(self, file:str="database.sqlite"):
+    def __init__(self, file:str="database.sqlite", riot_token:str=""):
         self.file = file
         self.data = {}
         if '.json' in self.file:
@@ -21,8 +21,7 @@ class DatabaseHandler:
         else:
             self.sql = sqlite.connect(file)
         self.cur = self.sql.cursor()
-        self.cur.execute("SELECT token FROM tokens WHERE name=\"Riot Games\" LIMIT 1")
-        self.riot_headers = {'X-Riot-Token' : self.cur.fetchone()[0]}
+        self.riot_headers = {'X-Riot-Token' : riot_token}
 
     def refresh_sql_cnx(self):
         self.sql.commit()
