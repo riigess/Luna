@@ -23,8 +23,11 @@ intents.members = True
 intents.messages = True
 intents.presences = True
 
+with open('../config.json', 'r') as f:
+    tokens = json.loads(f.read())
+
 string_time = "%d-%m-%Y %H:%M:%S"
-dbh = DatabaseHandler()
+dbh = DatabaseHandler(tokens['Riot Games'])
 rito = RiotAPI(dbh=dbh)
 
 command = {}
@@ -85,7 +88,7 @@ async def on_message_delete(message):
         channel = await message.guild.fetch_channel(guild_channel)
         await channel.send('', embed=embed)
         dbh.new_event(DatabaseEventType.message_deleted, message.guild.id, message.channel.id, False, False, datetime.now())
-    
+
 @client.event
 async def on_raw_message_delete(payload):
     guild_channel = dbh.get_guild_logging_channel(str(payload.guild_id))
@@ -362,15 +365,11 @@ async def invite(interaction:discord.Interaction):
 @client.tree.command()
 async def github(interaction:discord.Interaction):
     """Requests the GitHub link for the project for this discord bot"""
-    embed = discord.Embed(title="Check me out on GitHub!", url="https://github.com/riigess/Mona")
+    embed = discord.Embed(title="Check me out on GitHub!", url="https://github.com/riigess/Luna")
     embed.set_image(url='https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png')
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-# if args.debug:
-#     client.run(dbh.get_token('discord-beta'))
-# else:
-#     client.run(dbh.get_token("discord"))
 service_name = "discord"
-token = dbh.get_token(service_name)
+token = tokens[service_name]
 client.run(token)
