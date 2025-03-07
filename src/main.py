@@ -7,11 +7,8 @@ from datetime import datetime
 import discord
 from discord import app_commands
 
-from resources.RiotAPI import RiotAPI
 from resources.DatabaseHandler import DatabaseHandler
 from resources.DatabaseHandler import DatabaseEventType
-from enumerators.PlatformEndpoints import PlatformEndpoints
-from enumerators.RegionalEndpoints import RegionalEndpoints
 
 argpar = argparse.ArgumentParser(prefix_chars="-")
 argpar.add_argument("-debug", action="store_true")
@@ -27,8 +24,7 @@ with open('../config.json', 'r') as f:
     tokens = json.loads(f.read())
 
 string_time = "%d-%m-%Y %H:%M:%S"
-dbh = DatabaseHandler(tokens['Riot Games'])
-rito = RiotAPI(dbh=dbh)
+dbh = DatabaseHandler()
 
 command = {}
 
@@ -221,118 +217,6 @@ async def shadowban(interaction:discord.Interaction, id:str):
     user = await client.fetch_user(id)
     await interaction.guild.ban(user=user)
     await interaction.response.send_message(f"Banned {user.name}#{user.discriminator}.")
-
-#############################
-#### Riot Games Commands ####
-#############################
-@client.tree.command()
-@app_commands.describe(
-    summoner_name="Name of the player you want to search for",
-    endpoint=f"{PlatformEndpoints._member_names_}"
-)
-async def recentleaguematch(interaction:discord.Interaction, summoner_name:str, endpoint:str="NorthAmerica"):
-    if endpoint in PlatformEndpoints._member_names_:
-        plat = PlatformEndpoints._member_map_[endpoint]
-        name_resp = rito.get_summoner_by_name(platform=plat, name=summoner_name)
-        reg = RegionalEndpoints.Americas
-        match_list = rito.get_league_match_by_puuid(region=reg, puuid=json.loads(name_resp['response'])['puuid'])
-        match_details = json.loads(rito.get_league_match_by_id(region=reg, match_id=json.loads(match_list['response'])[0])['response'])
-        participant_info = {}
-        for i in match_details['info']['participants']:
-            if summoner_name.lower() in str(i['summonerName']).lower():
-                participant_info = i
-        print(participant_info)
-        k_d_a:int = (participant_info['kills'] + participant_info['assists']) / participant_info['deaths']
-        participant_info.update({'kda': k_d_a})
-        embed = discord.Embed(title="LoL Match")
-        embed.add_field(name="Role", value=participant_info['role'])
-        embed.add_field(name="Champion", value=participant_info['championName'])
-        embed.add_field(name="Kills", value=participant_info['kills'])
-        embed.add_field(name="Deaths", value=participant_info['deaths'])
-        embed.add_field(name="Assists", value=participant_info['assists'])
-        embed.add_field(name="K/D/A Ratio", value="%.2f" % participant_info['kda'])
-        embed.add_field(name="Lane", value=participant_info['lane'])
-        await interaction.response.send_message('', embed=embed)
-    else:
-        plat_names = [str(i) for i in PlatformEndpoints._member_names_]
-        plat_list = "[%s]" % ','.join(plat_names)
-        embed = discord.Embed(title="Error", description=f'Platform unknown.. Please try again using one of the following: {plat_list}')
-        await interaction.response.send_message('', embed=embed)
-
-@client.tree.command()
-@app_commands.describe(
-    summoner_name="Name of the user you would like to look up (ex. ZeusChops, C9 Sneaky, )",
-    endpoint=f"{PlatformEndpoints._member_names_}"
-)
-async def summonerinfo(interaction:discord.Interaction, summoner_name:str, endpoint:str='NorthAmerica'):
-    if endpoint in PlatformEndpoints._member_names_:
-        plat = PlatformEndpoints._member_map_[endpoint]
-        resp = json.loads(rito.get_summoner_by_name(platform=plat, name=summoner_name)['response'])
-        embed = discord.Embed(title=summoner_name, color=discord.Colour.green())
-        print(resp)
-        embed.add_field(name='id', value=resp['id'])
-        embed.add_field(name='accountId', value=resp['accountId'])
-        embed.add_field(name='puuid', value=resp['puuid'])
-        embed.add_field(name='name', value=resp['name'])
-        embed.add_field(name='profileIconId', value=resp['profileIconId']) #TODO: Update to use Profile Icon in embed
-        embed.add_field(name='Last Updated', value=resp['revisionDate'])
-        embed.add_field(name='Level', value=resp['summonerLevel'])
-        await interaction.response.send_message('', embed=embed)
-    else:
-        plat_names = [str(i) for i in PlatformEndpoints._member_names_]
-        plat_list = "[%s]" % ','.join(plat_names)
-        embed = discord.Embed(title="Error", description=f'Platform unknown.. Please try again using one of the following: {plat_list}')
-        await interaction.response.send_message('', embed=embed)
-
-@client.tree.command()
-@app_commands.describe(
-    endpoint=f"{PlatformEndpoints._member_names_}"
-)
-async def champrotations(interaction:discord.Interaction, endpoint:str='NorthAmerica'):
-    if endpoint in PlatformEndpoints._member_names_:
-        plat = PlatformEndpoints[endpoint]
-        champ_rot = json.loads(rito.get_champion_rotations(platform=plat)['response'].replace("'", '"'))
-        ddragon = rito.get_ddragon_champion_json()
-        champ_dict = ddragon['data']
-        key_champ = {}
-        for champion in list(champ_dict):
-            key_champ.update({champ_dict[champion]['key']:champion})
-        free_rot_champs = [[], []]
-        for i in champ_rot['freeChampionIds']:
-            free_rot_champs[0].append(key_champ[str(i)])
-        for j in champ_rot['freeChampionIdsForNewPlayers']:
-            free_rot_champs[1].append(key_champ[str(j)])
-        embed = discord.Embed(title='Free Champion Rotation')
-        embed.add_field(name='General', value='\n'.join(free_rot_champs[0]))
-        embed.add_field(name='New Players', value='\n'.join(free_rot_champs[1]))
-        await interaction.response.send_message('', embed=embed)
-    else:
-        plat_names = [str(i) for i in PlatformEndpoints._member_names_]
-        plat_list = "[%s]" % ','.join(plat_names)
-        embed = discord.Embed(title="Error", description=f'Platform unknown.. Please try again using one of the following: {plat_list}')
-        await interaction.response.send_message('', embed=embed)
-
-@client.tree.command()
-@app_commands.describe(
-    summoner_name="Which summoner name you would like to see recent matches for.",
-    endpoint=f"Different locations to pick from - [{','.join(RegionalEndpoints._member_names_)}]"
-)
-async def recentmatches(interaction:discord.Interaction, summoner_name:str, endpoint:str="NorthAmerica"):
-    if endpoint in PlatformEndpoints._member_names_:
-        plat = PlatformEndpoints[endpoint]
-        acct = json.loads(rito.get_summoner_by_name(platform=plat, name=summoner_name)['response'])
-        print(acct)
-        #TODO: Adjust RegionalEndpoints to have a lookup from PlatformEndpoints
-        resp = rito.get_league_match_by_puuid(region=RegionalEndpoints.Americas, puuid=acct['puuid']) #This should not be hardcoded in in this way
-        match_arr = json.loads(resp['response'])
-        embed = discord.Embed(title="Recent Matches")
-        embed.add_field(name="Matches", value='\n'.join(match_arr))
-        await interaction.response.send_message('', embed=embed)
-    else:
-        plat_names = [str(i) for i in PlatformEndpoints._member_names_]
-        plat_list = "[%s]" % ','.join(plat_names)
-        embed = discord.Embed(title="Error", description=f'Platform unknown.. Please try again using one of the following: {plat_list}')
-        await interaction.response.send_message('', embed=embed)
 
 #############################
 ##### General  Commands #####

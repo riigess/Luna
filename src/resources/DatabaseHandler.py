@@ -4,13 +4,11 @@ import os, json
 
 from enumerators.DatabaseEventType import DatabaseEventType
 from enumerators.PunishmentType import PunishmentType
-from enumerators.RegionalEndpoints import RegionalEndpoints
-from enumerators.PlatformEndpoints import PlatformEndpoints
 
 import requests
 
 class DatabaseHandler:
-    def __init__(self, file:str="database.sqlite", riot_token:str=""):
+    def __init__(self, file:str="database.sqlite"):
         self.file = file
         self.data = {}
         if '.json' in self.file:
@@ -21,7 +19,6 @@ class DatabaseHandler:
         else:
             self.sql = sqlite.connect(file)
         self.cur = self.sql.cursor()
-        self.riot_headers = {'X-Riot-Token' : riot_token}
 
     def refresh_sql_cnx(self):
         self.sql.commit()
@@ -144,32 +141,3 @@ class DatabaseHandler:
         self.refresh_sql_cnx()
         self.cur.execute(f"INSERT INTO user_activity(activity_name, game_name, start, ref_url) VALUES (\"{act_name}\", \"{game_name}\", \"{start}\", \"{ref_url}\")")
         self.sql.commit()
-
-    def check_for_cache(self, url:str):
-        self.refresh_sql_cnx()
-        self.cur.execute(f"SELECT * FROM urlRequests WHERE url=\"{url}\" ORDER BY datetime DESC LIMIT 1")
-        header = [i[0] for i in self.cur.description]
-        resp = self.cur.fetchall()
-        now = datetime.now()
-        if len(resp) > 0:
-            resp = resp[0]
-            if datetime.strptime(resp[-1], "%Y-%m-%d %H:%M:%S").timestamp() < now.timestamp():
-                to_return = {}
-                for i in range(len(header)):
-                    print(header[i], resp[i])
-                    to_return.update({header[i]:resp[i]})
-                return to_return
-        req = requests.get(url, headers=self.riot_headers)
-        req_j = req.json()
-        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        now_timestamp = datetime.now().timestamp()
-        seven_days = 7 * 24 * 3600 * 1000 #In milliseconds, may also be rewritten as 168 * 3600 * 1000 == 168 * 3600000
-        expiry_stamp = datetime.fromtimestamp(now_timestamp + seven_days)
-        expiry_str = expiry_stamp.strftime("%Y-%m-%d %H:%M:%S")
-        sanitized_req = json.dumps(req_j).replace("'", "&amp;").replace('"', "'")
-        self.cur.execute(f"INSERT INTO urlRequests(url, response, datetime, expiry) VALUES (\"{url}\", \"{sanitized_req}\", \"{now_str}\", \"{expiry_str}\")")
-        if '.json' in self.file:
-            self.sql.commit()
-            self.sql = sqlite.connect(database=self.data['database'])
-        to_return = {"url":url, "response":json.dumps(req_j), "timestamp":now_str, "expiry":expiry_str}
-        return to_return
