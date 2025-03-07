@@ -7,11 +7,8 @@ from datetime import datetime
 import discord
 from discord import app_commands
 
-from resources.RiotAPI import RiotAPI
 from resources.DatabaseHandler import DatabaseHandler
 from resources.DatabaseHandler import DatabaseEventType
-from enumerators.PlatformEndpoints import PlatformEndpoints
-from enumerators.RegionalEndpoints import RegionalEndpoints
 
 argpar = argparse.ArgumentParser(prefix_chars="-")
 argpar.add_argument("-debug", action="store_true")
@@ -27,8 +24,7 @@ with open('../config.json', 'r') as f:
     tokens = json.loads(f.read())
 
 string_time = "%d-%m-%Y %H:%M:%S"
-dbh = DatabaseHandler(tokens['Riot Games'])
-rito = RiotAPI(dbh=dbh)
+dbh = DatabaseHandler()
 
 command = {}
 
