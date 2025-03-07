@@ -85,7 +85,7 @@ async def on_message_delete(message):
         channel = await message.guild.fetch_channel(guild_channel)
         await channel.send('', embed=embed)
         dbh.new_event(DatabaseEventType.message_deleted, message.guild.id, message.channel.id, False, False, datetime.now())
-    
+
 @client.event
 async def on_raw_message_delete(payload):
     guild_channel = dbh.get_guild_logging_channel(str(payload.guild_id))
@@ -367,10 +367,7 @@ async def github(interaction:discord.Interaction):
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-# if args.debug:
-#     client.run(dbh.get_token('discord-beta'))
-# else:
-#     client.run(dbh.get_token("discord"))
 service_name = "discord"
-token = dbh.get_token(service_name)
+with open('config.json', 'r') as f:
+    token = json.loads(f.read())[service_name]
 client.run(token)
