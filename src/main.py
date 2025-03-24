@@ -43,14 +43,14 @@ async def on_ready():
 async def on_message(message):
     dbh.new_event(DatabaseEventType.message_received, message.guild.id, message.channel.id, False, False, message.created_at)
     dbh.new_message(message.id, message.guild.id, message.channel.id, message.author.id, message.created_at, message.content.replace("\"", "'"))
-    if 'https://amazon.com' in message.content:
-        print(message.content)
     await bot.process_commands(message)
 
 @bot.event
 async def on_message_edit(before, after):
     guild_channel = dbh.get_guild_logging_channel(after.guild.id)
     if guild_channel is not None:
+        if before.content == after.content:
+            return
         guild_channel = int(guild_channel)
         name = before.author.nick
         if type(name) is type(None):
@@ -59,11 +59,15 @@ async def on_message_edit(before, after):
         embed = discord.Embed(color=discord.Colour.orange())
         embed.add_field(name="Message before edit", value=before.content, inline=False)
         embed.add_field(name="Message after edit", value=after.content, inline=False)
-        embed.set_footer(text="%s | %s" % (name, after.edited_at.strftime(string_time)))
+        if after.edited_at:
+            embed.set_footer(text="%s | %s" % (name, after.edited_at.strftime(string_time)))
         channel = after.guild.get_channel(guild_channel)
         await channel.send('', embed=embed)
-        dbh.new_event(DatabaseEventType.message_received, after.guild.id, after.channel.id, False, False, after.edited_at)
-        dbh.message_edit(after.id, after.content, after.edited_at)
+        timestamp = after.edited_at
+        if not timestamp:
+            timestamp = datetime.now()
+        dbh.new_event(DatabaseEventType.message_received, after.guild.id, after.channel.id, False, False, timestamp)
+        dbh.message_edit(after.id, after.content, timestamp)
 
 @bot.event
 async def on_message_delete(message):

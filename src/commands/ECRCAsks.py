@@ -17,6 +17,5 @@ class ECRC(commands.Cog):
             await ctx.message.reply(f"Not required, but this would be helpful to support ECRC! \n{url}/?&linkCode=sl2&tag=ecrc-20")
         else:
             await ctx.message.reply(f"ERR: amazon.com not found. Found {url} instead.")
-        print("SCAMAZON LINK DEETS:", url, has_embed)
         if has_embed:
             await ctx.message.edit(suppress=True)
