@@ -93,7 +93,7 @@ class DatabaseHandler:
         self.refresh_sql_cnx()
         self.cur.execute(f"SELECT * FROM messages WHERE id=\"{id}\" LIMIT 1")
         msg = self.cur.fetchone()
-        self.cur.execute("INSERT INTO messages(id, guild_id, author_id, created_at, edited_at, content) VALUES (\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\");" % (id, msg[1], msg[3], msg[4], edited_at.strftime("%Y-%m-%d %H:%M:%S"), new_content))
+        self.cur.execute("INSERT INTO messages(id, guild_id, author_id, created_at, created_at, content) VALUES (\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\");" % (id, msg[1], msg[3], msg[4], edited_at.strftime("%Y-%m-%d %H:%M:%S"), new_content))
         self.cur.execute("INSERT INTO event_history(event_type, guild_id, channel_id, is_voice_channel, is_private_message, date) VALUES (\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\");" % (DatabaseEventType.message_edited, msg[1], msg[2], False, False, edited_at.strftime("%Y-%m-%d %H:%M:%S")))
         self.sql.commit()
 
@@ -141,3 +141,11 @@ class DatabaseHandler:
         self.refresh_sql_cnx()
         self.cur.execute(f"INSERT INTO user_activity(activity_name, game_name, start, ref_url) VALUES (\"{act_name}\", \"{game_name}\", \"{start}\", \"{ref_url}\")")
         self.sql.commit()
+
+    def get_alias(self, guild_id:str, alias_name:str) -> str:
+        self.refresh_sql_cnx()
+        self.cur.execute(f"SELECT response FROM aliases WHERE guild_id=\"{guild_id}\" and alias=\"{alias_name}\"")
+        headers = [i[0] for i in self.cur.description]
+        resp = self.cur.fetchall()
+
+
