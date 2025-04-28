@@ -1,14 +1,12 @@
-import os
 import json
 import asyncio
-import requests
-import argparse
 from datetime import datetime
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.abc import Snowflake
+import requests
+import argparse
 
-from commands.ECRCAsks import ECRC
 from resources.DatabaseHandler import DatabaseHandler
 from resources.DatabaseHandler import DatabaseEventType
 
@@ -29,23 +27,69 @@ string_time = "%d-%m-%Y %H:%M:%S"
 dbh = DatabaseHandler()
 
 command = {}
+MY_GUILD = discord.Object(id=1305938554312200242)
 
-bot = commands.Bot("!", intents=intents)
-tree = bot.tree
+class MyClient(discord.Client):
+    def __init__(self, *, intents:discord.Intents):
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
 
-@bot.event
+    async def setup_hook(self):
+        self.tree.copy_global_to(guild=MY_GUILD)
+        await self.tree.sync(guild=MY_GUILD)
+
+class custom_guild(Snowflake):
+    def __init__(self, id):
+        self.id = id
+
+client = MyClient(intents=intents)
+tree = client.tree
+
+delete_color = discord.Colour.purple()
+warn_color = discord.Colour.yellow()
+log_color = discord.Colour.green()
+
+@client.event
 async def on_ready():
-    await bot.add_cog(ECRC(bot))
-    print(f"Logged in as {bot.user} with client id {bot.user.id}")
-    # print(f"https://discord.com/oauth2/authorize?client_id={client.application_id}&scope=bot&permissions=309668928")
+    # await bot.add_cog(ECRC(bot))
+    print(f"Logged in as {client.user} with client id {client.application_id}")
+    print(f"https://discord.com/oauth2/authorize?client_id={client.application_id}&scope=bot&permissions=309668928")
 
-@bot.event
+
+@client.event
 async def on_message(message):
+    if type(message.channel) == discord.DMChannel:
+        dbh.new_event(DatabaseEventType.message_sent, str(message.channel.id), str(message.channel.id), False, False, message.created_at)
+        dbh.new_message(message.id, str(message.channel.id), str(message.channel.id), message.author.id, message.created_at, message.content.replace("\"", "'"))
+        return
     dbh.new_event(DatabaseEventType.message_received, message.guild.id, message.channel.id, False, False, message.created_at)
     dbh.new_message(message.id, message.guild.id, message.channel.id, message.author.id, message.created_at, message.content.replace("\"", "'"))
-    await bot.process_commands(message)
+    content = message.content
+    if len(content) > 0 and content[0] == '!':
+        if 'amazon' == content[1:len('amazon')+1].lower(): #TODO: Move this to operation to another class..
+            ref_endian = dbh.get_command_alias_response(message.guild.id, 'amazon')
+            if ref_endian:
+                return
+            if ref_endian[0] == '/':
+                ref_endian = ref_endian[1:]
+            spl = content.split(' ')
+            url = spl[1]
+            has_embed = '<' not in url and '>' not in url
+            if '<' == url[0]:
+                url = url[1:]
+            if '>' == url[-1]:
+                url = url[:-1]
+            if 'amazon.com' in url:
+                await message.reply(f"Not required, but this would be helpful to support the community!\n{url}/{ref_endian}")
+            if has_embed:
+                await message.edit(suppress=True)
+        elif 'restart' == content[1:len('restart')+1].lower() and message.author.id == int(1064787494740176919):
+            await message.reply("Bot will be restarting in 5 seconds..")
+            await asyncio.sleep(5)
+            await message.channel.send(f"{client.user.display_name} will now restart.")
+            await client.close()
 
-@bot.event
+@client.event
 async def on_message_edit(before, after):
     guild_channel = dbh.get_guild_logging_channel(after.guild.id)
     if guild_channel is not None:
@@ -69,7 +113,7 @@ async def on_message_edit(before, after):
         dbh.new_event(DatabaseEventType.message_received, after.guild.id, after.channel.id, False, False, timestamp)
         dbh.message_edit(after.id, after.content, timestamp)
 
-@bot.event
+@client.event
 async def on_message_delete(message):
     guild_channel = dbh.get_guild_logging_channel(message.guild.id)
     if guild_channel is not None:
@@ -78,7 +122,7 @@ async def on_message_delete(message):
         if type(name) is type(None):
             name = message.author.name
         name += "#%s" % message.author.discriminator
-        embed = discord.Embed(color=discord.Colour.red())
+        embed = discord.Embed(color=delete_color)
         embed.add_field(name="Deleted Message", value=message.content, inline=False)
         embed.add_field(name="Message ID", value=message.id, inline=False)
         embed.add_field(name="Channel", value=message.channel.mention)
@@ -87,7 +131,7 @@ async def on_message_delete(message):
         await channel.send('', embed=embed)
         dbh.new_event(DatabaseEventType.message_deleted, message.guild.id, message.channel.id, False, False, datetime.now())
 
-@bot.event
+@client.event
 async def on_raw_message_delete(payload):
     guild_channel = dbh.get_guild_logging_channel(str(payload.guild_id))
     if guild_channel is not None:
@@ -95,8 +139,8 @@ async def on_raw_message_delete(payload):
         msg = dbh.get_message(str(payload.message_id), str(payload.guild_id))
         await asyncio.sleep(3)
         last_message = None
-        async for message in bot.get_channel(guild_channel).history(limit=10):
-            if message.author.id == bot.user.id:
+        async for message in client.get_channel(guild_channel).history(limit=10):
+            if message.author == client.user:
                 if len(message.embeds) == 1:
                     if len(message.embeds[0].fields) >= 2:
                         for i in range(len(message.embeds[0].fields)):
@@ -105,27 +149,27 @@ async def on_raw_message_delete(payload):
                                     last_message = message
         if type(last_message) is type(None):
             if type(msg) is not type(None):
-                embed = discord.Embed(color=discord.Colour.red(), title="Message deleted")
+                embed = discord.Embed(color=delete_color, title="Message deleted")
                 embed.add_field(name="Message content", value="%s" % msg["content"])
-                user = bot.get_user(msg['author_id'])
+                user = client.get_user(msg['author_id'])
                 if type(user) is type(None):
-                    user = bot.get_guild(payload.guild_id).get_member(msg['author_id'])
+                    user = client.get_guild(payload.guild_id).get_member(msg['author_id'])
                 if type(user) is not type(None):
                     embed.set_footer(text="Author - %s#%s" % (user.name, str(user.discriminator)))
                 else:
                     embed.set_footer(text='Author ID: %s' % msg['author_id'])
-                channel = bot.get_channel(guild_channel)
+                channel = client.get_channel(guild_channel)
                 await channel.send('', embed=embed)
             else:
-                embed = discord.Embed(color=discord.Colour.red(), title="Old message deleted")
+                embed = discord.Embed(color=delete_color, title="Old message deleted")
                 embed.add_field(name="Deleted Message", value="ID: %s" % payload.message_id)
                 embed.add_field(name="Deleted in Channel", value="ID: %s" % payload.channel_id)
-                channel = bot.get_channel(guild_channel)
+                channel = client.get_channel(guild_channel)
                 await channel.send('', embed=embed)
             dbh.new_event(DatabaseEventType.message_deleted, payload.message_id, payload.channel_id, False, False, datetime.now())
         dbh.delete_message(payload.message_id, payload.guild_id)
 
-@bot.event
+@client.event
 async def on_member_join(member):
     guild_channel = dbh.get_guild_logging_channel(member.guild.id)
     if guild_channel is not None:
@@ -134,13 +178,13 @@ async def on_member_join(member):
         if type(name) is type(None):
             name = member.name
         name += "#%s" % member.discriminator
-        embed = discord.Embed(color=discord.Colour.green(), title="User joined")
+        embed = discord.Embed(color=log_color, title="User joined")
         embed.set_footer(text="%s | %s" % (name, member.joined_at.strftime(string_time)))
         channel = member.guild.get_channel(guild_channel)
         await channel.send('', embed=embed)
         dbh.new_event(DatabaseEventType.member_joined, member.guild.id, "", False, False, member.joined_at)
 
-@bot.event
+@client.event
 async def on_member_remove(member):
     guild_channel = dbh.get_guild_logging_channel(member.guild.id)
     if guild_channel is not None:
@@ -149,13 +193,13 @@ async def on_member_remove(member):
         if type(name) is type(None):
             name = member.name
         name += "#%s" % member.discriminator
-        embed = discord.Embed(color=discord.Colour.red(), title="User left server")
+        embed = discord.Embed(color=delete_color, title="User left server")
         embed.set_footer(text=name)
         channel = member.guild.get_channel(guild_channel)
         await channel.send('', embed=embed)
         dbh.new_event(DatabaseEventType.member_banned, member.guild.id, "", False, False, datetime.now())
 
-@bot.event
+@client.event
 async def on_guild_join(guild):
     dbh.new_event(DatabaseEventType.guild_joined, guild.id, "", False, False, datetime.now())
     splash = ""
@@ -169,11 +213,12 @@ async def on_guild_join(guild):
         icon = guild.icon_url
     dbh.add_server(guild.id, guild.owner_id, splash, banner, icon)
 
-@bot.event
+@client.event
 async def on_guild_remove(guild):
     dbh.new_event(DatabaseEventType.guild_left, guild.id, "", False, False, datetime.now())
+    #TODO: Delete all messages from guild
 
-@bot.event
+@client.event
 async def on_presence_update(before, after):
     for act in after.activities:
         if type(act) is type(discord.Game):
@@ -214,7 +259,7 @@ async def clean(interaction:discord.Interaction, messages_to_delete:int):
 @app_commands.describe(
     id='The id of the user you would like to ban'
 )
-async def shadowban(interaction:discord.Interaction, id:str):
+async def shadowban(interaction:discord.Interaction, id:int):
     """Bans a user by ID so they do not have to be joined to the server to be banned."""
     user = await client.fetch_user(id)
     await interaction.guild.ban(user=user)
@@ -252,10 +297,36 @@ async def invite(interaction:discord.Interaction):
 async def github(interaction:discord.Interaction):
     """Requests the GitHub link for the project for this discord bot"""
     embed = discord.Embed(title="Check me out on GitHub!", url="https://github.com/riigess/Luna")
-    embed.set_image(url='https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png')
+    embed.set_thumbnail(url='https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png')
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+# @tree.command(guild=discord.Object(id=1305938554312200242))
+@tree.command()
+async def amazon(interaction:discord.Interaction, url:str):
+    ref_endian = "/?&linkCode=s12&tag=ecrc-20"
+    if len(ref_endian) == 0: #Currently unused code, will be changed later with GenericCommands updates
+        return
+    if ref_endian[0] == '/':
+        ref_endian = ref_endian[1:]
+    has_embed = '<' not in url and '>' not in url
+    if not has_embed:
+        url = url[1:-1]
+    if '<' == url[0]:
+        url = url[1:]
+    if '>' == url[-1]:
+        url = url[:-1]
+    if '/ref=' in url:
+        url = url.split('/ref=')[0]
+    if "amazon.com" in url:
+        await interaction.response.send_message(f"Not required, but this would be helpful to support the community!\n{url}/{ref_endian}")
+    else:
+        await interaction.response.send_message(f"Sorry, unable to process link. Here's the one you sent again..\n{url}")
+    if has_embed and interaction.message:
+        await interaction.message.edit(suppress=True)
 
-service_name = "discord"
-token = tokens[service_name]
-bot.run(token)
+
+if __name__ == "__main__":
+    debug = True
+    service_name = "discord" if not debug else "discord-beta"
+    token = tokens[service_name]
+    client.run(token)
